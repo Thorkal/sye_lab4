@@ -13,8 +13,12 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.Calendar;
+import java.util.UUID;
+
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.BleManagerCallbacks;
+import no.nordicsemi.android.ble.data.Data;
 
 public class BleOperationsViewModel extends AndroidViewModel {
 
@@ -23,11 +27,25 @@ public class BleOperationsViewModel extends AndroidViewModel {
     private MySymBleManager ble = null;
     private BluetoothGatt mConnection = null;
 
+    //UUID
+    private final String timeServiceUUID =  "00001805-0000-1000-8000-00805f9b34fb";
+    private final String symServiceUUID =  "3c0a1000-281d-4b48-b2a7-f15579a1c38f";
+    private final String currentTimeCharUUID = "00002A2B-0000-1000-8000-00805f9b34fb";
+    private final String integerCharUUID = "3c0a1001-281d-4b48-b2a7-f15579a1c38f";
+    private final String temperatureCharUUID = "3c0a1002-281d-4b48-b2a7-f15579a1c38f";
+    private final String buttonClickCharUUID = "3c0a1003-281d-4b48-b2a7-f15579a1c38f";
+
     //live data - observer
     private final MutableLiveData<Boolean> mIsConnected = new MutableLiveData<>();
+    private final MutableLiveData<Float> mTemp= new MutableLiveData<>();
+    private final MutableLiveData<Integer> mClickCount = new MutableLiveData<>();
+    private final MutableLiveData<Calendar> mDatecal = new MutableLiveData<>();
     public LiveData<Boolean> isConnected() {
         return mIsConnected;
     }
+    public LiveData<Float> getTemp(){return mTemp;}
+    public LiveData<Integer> getClickCOunt(){return mClickCount;}
+    public LiveData<Calendar> getDatCal(){return mDatecal;}
 
     //references to the Services and Characteristics of the SYM Pixl
     private BluetoothGattService timeService = null, symService = null;
@@ -71,6 +89,16 @@ public class BleOperationsViewModel extends AndroidViewModel {
     public boolean readTemperature() {
         if(!isConnected().getValue() || temperatureChar == null) return false;
         return ble.readTemperature();
+    }
+
+    public boolean writeTime() {
+        if(!isConnected().getValue() || currentTimeChar == null) return false;
+        return ble.writeTime();
+    }
+
+    public boolean writeInteger(int value) {
+        if(!isConnected().getValue() || integerChar == null) return false;
+        return ble.writeInteger(value);
     }
 
     private BleManagerCallbacks bleManagerCallbacks = new BleManagerCallbacks() {
@@ -170,8 +198,20 @@ public class BleOperationsViewModel extends AndroidViewModel {
                       caractéristiques (déclarés en lignes 33 et 34)
                  */
 
+                //We get all the services
+                timeService = mConnection.getService(UUID.fromString(timeServiceUUID));
+                symService = mConnection.getService(UUID.fromString(symServiceUUID));
+                currentTimeChar = timeService.getCharacteristic(UUID.fromString(currentTimeCharUUID));
+                integerChar = symService.getCharacteristic(UUID.fromString(integerCharUUID));
+                buttonClickChar = symService.getCharacteristic(UUID.fromString(buttonClickCharUUID));
+                temperatureChar = symService.getCharacteristic(UUID.fromString(temperatureCharUUID));
+
+                //we return true only if all services are on the device.
+                return timeService != null && symService != null &&
+                        currentTimeChar != null && integerChar != null &&
+                        buttonClickChar != null && temperatureChar != null;
+
                 //FIXME si tout est OK, on retourne true, sinon la librairie appelera la méthode onDeviceNotSupported()
-                return false;
             }
 
             @Override
@@ -182,9 +222,26 @@ public class BleOperationsViewModel extends AndroidViewModel {
                     Dans notre cas il s'agit de s'enregistrer pour recevoir les notifications proposées par certaines
                     caractéristiques, on en profitera aussi pour mettre en place les callbacks correspondants.
                  */
+
+                //we enable the notifications for the two characteristics that need it
+                enableNotifications(buttonClickChar).enqueue();
+                enableNotifications(currentTimeChar).enqueue();
+
+                //We set create the callback functions of thoses two notification, setting the value of
+                //the corresponding mMtableLiveData
+                setNotificationCallback(buttonClickChar).with((device, data) -> {
+                    mClickCount.setValue(data.getIntValue(Data.FORMAT_UINT8, 0));
+                });
+
+                setNotificationCallback(currentTimeChar).with((device, data) -> {
+                    mDatecal.setValue(convertDataToCalendar(data));
+                });
+
             }
 
-            @Override
+
+
+                @Override
             protected void onDeviceDisconnected() {
                 //we reset services and characteristics
                 timeService = null;
@@ -203,7 +260,66 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 des MutableLiveData
                 On placera des méthodes similaires pour les autres opérations...
             */
+            //we read the characteristic temperature and set the value of the characteristic to the mutablelivedata
+            readCharacteristic(temperatureChar).with((device, data) -> {
+                mTemp.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10f);
+            }).enqueue();
             return false; //FIXME
         }
+
+        public boolean writeTime(){
+            //We create and send the time to the current time characteristic
+            byte[] tempTime = createBleTime();
+            writeCharacteristic(currentTimeChar, tempTime).enqueue();
+            return false;
+        }
+
+        public boolean writeInteger(int value){
+            //We create the byte array corresponding to the integer
+            byte[] tempCharact = new byte[]{
+                    (byte)value,
+                    (byte)(value >> 8),
+                    (byte)(value >> 16),
+                    (byte)(value >> 24)
+            };
+            //we write our integer on byte array format to to the characteristic
+            writeCharacteristic(integerChar,tempCharact).enqueue();
+            return false;
+        }
+
+        private Calendar convertDataToCalendar(Data data){
+
+            Calendar cal = Calendar.getInstance();
+
+            //we parse the data , so we can put it in the calendar
+            cal.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
+            cal.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2) - 1);
+            cal.set(Calendar.DAY_OF_MONTH, data.getIntValue(Data.FORMAT_UINT8,3));
+            cal.set(Calendar.HOUR_OF_DAY, data.getIntValue(Data.FORMAT_UINT8,4));
+            cal.set(Calendar.MINUTE, data.getIntValue(Data.FORMAT_UINT8,5));
+            cal.set(Calendar.SECOND, data.getIntValue(Data.FORMAT_UINT8,6));
+            cal.set(Calendar.DAY_OF_WEEK, data.getIntValue(Data.FORMAT_UINT8,7));
+            return cal;
+        }
+
+
+        private byte[] createBleTime() {
+
+            Calendar cal = Calendar.getInstance();
+
+            //we set the byte array with the good values, so we can send it later
+            byte[] BleTime = new byte[10];
+            BleTime[0] = (byte) (cal.get(Calendar.YEAR));
+            BleTime[1] = (byte) (cal.get(Calendar.YEAR) >> 8);
+            BleTime[2] = (byte) (cal.get(Calendar.MONTH) + 1);
+            BleTime[3] = (byte) (cal.get(Calendar.DAY_OF_MONTH));
+            BleTime[4] = (byte) (cal.get(Calendar.HOUR_OF_DAY));
+            BleTime[5] = (byte) (cal.get(Calendar.MINUTE));
+            BleTime[6] = (byte) (cal.get(Calendar.SECOND));
+            BleTime[7] = (byte) (cal.get(Calendar.DAY_OF_WEEK));
+
+            return BleTime;
+        }
+
     }
 }
