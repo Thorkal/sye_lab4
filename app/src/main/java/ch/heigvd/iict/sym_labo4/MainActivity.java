@@ -1,3 +1,11 @@
+/*
+ -----------------------------------------------------------------------------------
+ Laboratoire : 04
+ Fichier     : MainActivity.java
+ Auteur(s)   : Pierrick Muller, Guillaume Zaretti, Tommy Gerardi
+ Date        : 03.01.2020
+ -----------------------------------------------------------------------------------
+*/
 package ch.heigvd.iict.sym_labo4;
 
 import android.Manifest;
