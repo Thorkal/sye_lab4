@@ -32,7 +32,6 @@ import android.widget.TextView;
 import androidx.lifecycle.ViewModelProviders;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import ch.heigvd.iict.sym_labo4.abstractactivies.BaseTemplateActivity;
 import ch.heigvd.iict.sym_labo4.adapters.ResultsAdapter;
@@ -116,7 +115,20 @@ public class BleActivity extends BaseTemplateActivity {
         this.bleViewModel.isConnected().observe(this, (isConnected) -> {
             updateGui();
         });
+
+        this.bleViewModel.getTemp().observe(this,(getTemp) -> {
+            updateGui();
+        });
+
+        this.bleViewModel.getClickCOunt().observe(this,(getClickCOunt) -> {
+            updateGui();
+        });
+
+        this.bleViewModel.getDatCal().observe(this,(getDatCal) -> {
+            updateGui();
+        });
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
