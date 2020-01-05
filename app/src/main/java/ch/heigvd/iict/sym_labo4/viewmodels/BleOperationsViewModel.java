@@ -27,6 +27,14 @@ public class BleOperationsViewModel extends AndroidViewModel {
     private MySymBleManager ble = null;
     private BluetoothGatt mConnection = null;
 
+    //UUID
+    private final String timeServiceUUID =  "00001805-0000-1000-8000-00805f9b34fb";
+    private final String symServiceUUID =  "3c0a1000-281d-4b48-b2a7-f15579a1c38f";
+    private final String currentTimeCharUUID = "00002A2B-0000-1000-8000-00805f9b34fb";
+    private final String integerCharUUID = "3c0a1001-281d-4b48-b2a7-f15579a1c38f";
+    private final String temperatureCharUUID = "3c0a1002-281d-4b48-b2a7-f15579a1c38f";
+    private final String buttonClickCharUUID = "3c0a1003-281d-4b48-b2a7-f15579a1c38f";
+
     //live data - observer
     private final MutableLiveData<Boolean> mIsConnected = new MutableLiveData<>();
     private final MutableLiveData<Float> mTemp= new MutableLiveData<>();
@@ -190,13 +198,15 @@ public class BleOperationsViewModel extends AndroidViewModel {
                       caractéristiques (déclarés en lignes 33 et 34)
                  */
 
-                timeService = mConnection.getService(UUID.fromString("00001805-0000-1000-8000-00805f9b34fb"));
-                symService = mConnection.getService(UUID.fromString("3c0a1000-281d-4b48-b2a7-f15579a1c38f"));
-                currentTimeChar = timeService.getCharacteristic(UUID.fromString("00002A2B-0000-1000-8000-00805f9b34fb"));
-                integerChar = symService.getCharacteristic(UUID.fromString("3c0a1001-281d-4b48-b2a7-f15579a1c38f"));
-                buttonClickChar = symService.getCharacteristic(UUID.fromString("3c0a1003-281d-4b48-b2a7-f15579a1c38f"));
-                temperatureChar = symService.getCharacteristic(UUID.fromString("3c0a1002-281d-4b48-b2a7-f15579a1c38f"));
+                //We get all the services
+                timeService = mConnection.getService(UUID.fromString(timeServiceUUID));
+                symService = mConnection.getService(UUID.fromString(symServiceUUID));
+                currentTimeChar = timeService.getCharacteristic(UUID.fromString(currentTimeCharUUID));
+                integerChar = symService.getCharacteristic(UUID.fromString(integerCharUUID));
+                buttonClickChar = symService.getCharacteristic(UUID.fromString(buttonClickCharUUID));
+                temperatureChar = symService.getCharacteristic(UUID.fromString(temperatureCharUUID));
 
+                //we return true only if all services are on the device.
                 return timeService != null && symService != null &&
                         currentTimeChar != null && integerChar != null &&
                         buttonClickChar != null && temperatureChar != null;
@@ -213,10 +223,12 @@ public class BleOperationsViewModel extends AndroidViewModel {
                     caractéristiques, on en profitera aussi pour mettre en place les callbacks correspondants.
                  */
 
-
+                //we enable the notifications for the two characteristics that need it
                 enableNotifications(buttonClickChar).enqueue();
                 enableNotifications(currentTimeChar).enqueue();
 
+                //We set create the callback functions of thoses two notification, setting the value of
+                //the corresponding mMtableLiveData
                 setNotificationCallback(buttonClickChar).with((device, data) -> {
                     mClickCount.setValue(data.getIntValue(Data.FORMAT_UINT8, 0));
                 });
@@ -248,6 +260,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 des MutableLiveData
                 On placera des méthodes similaires pour les autres opérations...
             */
+            //we read the characteristic temperature and set the value of the characteristic to the mutablelivedata
             readCharacteristic(temperatureChar).with((device, data) -> {
                 mTemp.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10f);
             }).enqueue();
@@ -255,17 +268,21 @@ public class BleOperationsViewModel extends AndroidViewModel {
         }
 
         public boolean writeTime(){
-            writeCharacteristic(currentTimeChar, createBleTime()).enqueue();
+            //We create and send the time to the current time characteristic
+            byte[] tempTime = createBleTime();
+            writeCharacteristic(currentTimeChar, tempTime).enqueue();
             return false;
         }
 
         public boolean writeInteger(int value){
+            //We create the byte array corresponding to the integer
             byte[] tempCharact = new byte[]{
                     (byte)value,
                     (byte)(value >> 8),
                     (byte)(value >> 16),
                     (byte)(value >> 24)
             };
+            //we write our integer on byte array format to to the characteristic
             writeCharacteristic(integerChar,tempCharact).enqueue();
             return false;
         }
@@ -273,6 +290,8 @@ public class BleOperationsViewModel extends AndroidViewModel {
         private Calendar convertDataToCalendar(Data data){
 
             Calendar cal = Calendar.getInstance();
+
+            //we parse the data , so we can put it in the calendar
             cal.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
             cal.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2) - 1);
             cal.set(Calendar.DAY_OF_MONTH, data.getIntValue(Data.FORMAT_UINT8,3));
@@ -288,6 +307,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
             Calendar cal = Calendar.getInstance();
 
+            //we set the byte array with the good values, so we can send it later
             byte[] BleTime = new byte[10];
             BleTime[0] = (byte) (cal.get(Calendar.YEAR));
             BleTime[1] = (byte) (cal.get(Calendar.YEAR) >> 8);
