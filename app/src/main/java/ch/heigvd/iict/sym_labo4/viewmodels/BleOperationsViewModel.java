@@ -155,7 +155,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
         /**
          * BluetoothGatt callbacks object.
          */
-        private final BleManagerGattCallback mGattCallback = new BleManagerGattCallback() {
+            private final BleManagerGattCallback mGattCallback = new BleManagerGattCallback() {
 
             @Override
             public boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {

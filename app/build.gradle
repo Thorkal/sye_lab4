@@ -36,4 +36,5 @@ dependencies {
 
     //https://github.com/NordicSemiconductor/Android-BLE-Library - BSD 3-Clause "New" or "Revised" License
     implementation 'no.nordicsemi.android:ble:2.1.1'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 }

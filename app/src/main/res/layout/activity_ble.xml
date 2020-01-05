@@ -19,6 +19,88 @@
 
             <!-- TODO vous placerez dans ce layout toutes les vues nécessaire aux intéractions avec le périphérique BLE -->
 
+            <TextView
+                android:id="@+id/temperature"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_temperature_title" />
+
+            <TextView
+                android:id="@+id/temp_actu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <Button
+                android:id="@+id/send_temp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_temperature_read" />
+
+            <TextView
+                android:id="@+id/integer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_sendvalue_title" />
+
+            <EditText
+                android:id="@+id/to_send_int"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="1"
+                android:inputType="number"></EditText>
+
+            <Button
+                android:id="@+id/send_val"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_sendvalue_send" />
+
+            <TextView
+                android:id="@+id/nb_clicks_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_clickcounter_title" />
+
+            <TextView
+                android:id="@+id/nb_clicks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <TextView
+                android:id="@+id/date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_currenttime_title" />
+
+            <TextView
+                android:id="@+id/curr_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <EditText
+                android:id="@+id/dateToWrite"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:hint="hh.mm.ss"
+                android:inputType="number" />
+
+            <EditText
+                android:id="@+id/timeTest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:hint="hh.mm.ss"
+                android:inputType="time" />
+
+            <Button
+                android:id="@+id/send_hour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_currenttime_set" />
+
         </LinearLayout>
 
     </ScrollView>
