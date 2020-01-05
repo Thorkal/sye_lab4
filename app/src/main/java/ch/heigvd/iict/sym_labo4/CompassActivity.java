@@ -1,5 +1,17 @@
+/*
+ -----------------------------------------------------------------------------------
+ Laboratoire : 04
+ Fichier     : CompassActivity.java
+ Auteur(s)   : Pierrick Muller, Guillaume Zaretti, Tommy Gerardi
+ Date        : 03.01.2020
+ -----------------------------------------------------------------------------------
+*/
 package ch.heigvd.iict.sym_labo4;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,11 +20,23 @@ import android.view.WindowManager;
 
 import ch.heigvd.iict.sym_labo4.gl.OpenGLRenderer;
 
-public class CompassActivity extends AppCompatActivity {
+public class CompassActivity extends AppCompatActivity implements SensorEventListener {
 
     //opengl
     private OpenGLRenderer  opglr           = null;
     private GLSurfaceView   m3DView         = null;
+
+    //sensor managers
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private Sensor mMagneticField;
+
+    private float[] newMatrix = new float[4*4];
+    private float[] oldMatrix = new float[4*4];
+
+    private float[] gravity = new float[3];
+    private float[] geomagnetic = new float[3];
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +58,41 @@ public class CompassActivity extends AppCompatActivity {
         //init opengl surface view
         this.m3DView.setRenderer(this.opglr);
 
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mMagneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
+    }
+
+    protected void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    protected void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        switch (event.sensor.getType()){
+            case Sensor.TYPE_ACCELEROMETER :
+                gravity = event.values;
+                break;
+            case Sensor.TYPE_MAGNETIC_FIELD :
+                geomagnetic = event.values;
+                break;
+        }
+        SensorManager.getRotationMatrix(newMatrix, null, gravity, geomagnetic);
+        oldMatrix = this.opglr.swapRotMatrix(newMatrix);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // On ne s'occupe pas de la precision
     }
 
     /* TODO
