@@ -79,22 +79,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-            <EditText
-                android:id="@+id/dateToWrite"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:hint="hh.mm.ss"
-                android:inputType="number" />
-
-            <EditText
-                android:id="@+id/timeTest"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:hint="hh.mm.ss"
-                android:inputType="time" />
-
             <Button
                 android:id="@+id/send_hour"
                 android:layout_width="match_parent"

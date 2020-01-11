@@ -19,19 +19,20 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.lifecycle.ViewModelProviders;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import ch.heigvd.iict.sym_labo4.abstractactivies.BaseTemplateActivity;
 import ch.heigvd.iict.sym_labo4.adapters.ResultsAdapter;
@@ -54,11 +55,17 @@ public class BleActivity extends BaseTemplateActivity {
     private BleOperationsViewModel bleViewModel = null;
 
     //gui elements
+    private TextView temp = null;
+    private TextView to_send_int = null;
+    private TextView clickNumber = null;
+    private TextView curr_date = null;
+
     private View operationPanel = null;
     private View scanPanel = null;
 
     private ListView scanResults = null;
     private TextView emptyScanResults = null;
+
 
     //menu elements
     private MenuItem scanMenuBtn = null;
@@ -90,6 +97,10 @@ public class BleActivity extends BaseTemplateActivity {
         this.scanPanel = findViewById(R.id.ble_scan);
         this.scanResults = findViewById(R.id.ble_scanresults);
         this.emptyScanResults = findViewById(R.id.ble_scanresults_empty);
+        this.temp = findViewById(R.id.temp_actu);
+        this.to_send_int = findViewById(R.id.to_send_int);
+        this.clickNumber = findViewById(R.id.nb_clicks);
+        this.curr_date = findViewById(R.id.curr_date);
 
         //manage scanned item
         this.scanResultsAdapter = new ResultsAdapter(this);
@@ -98,6 +109,31 @@ public class BleActivity extends BaseTemplateActivity {
 
         //connect to view model
         this.bleViewModel = ViewModelProviders.of(this).get(BleOperationsViewModel.class);
+
+
+        findViewById(R.id.send_temp).setOnClickListener((view) -> {
+            Float temperature;
+            if(this.bleViewModel.readTemperature()) {
+                temperature  = this.bleViewModel.getTemp().getValue();
+                this.temp.setText(temperature != null ? temperature.toString() : "0");
+            }
+
+        });
+
+        findViewById(R.id.send_hour).setOnClickListener((view) -> {
+            this.bleViewModel.writeTime();
+        });
+
+        findViewById(R.id.send_val).setOnClickListener((view) -> {
+            if(!(TextUtils.isEmpty(this.to_send_int.getText())))
+            {
+                this.bleViewModel.writeInteger(Integer.parseInt(this.to_send_int.getText().toString()));
+            }
+            else
+            {
+                Toast.makeText(getApplicationContext(),"Please enter a valid value.",Toast.LENGTH_SHORT).show();
+            }
+        });
 
         updateGui();
 
@@ -114,10 +150,7 @@ public class BleActivity extends BaseTemplateActivity {
         //ble events
         this.bleViewModel.isConnected().observe(this, (isConnected) -> {
             updateGui();
-        });
-
-        this.bleViewModel.getTemp().observe(this,(getTemp) -> {
-            updateGui();
+            this.bleViewModel.readTemperature();
         });
 
         this.bleViewModel.getClickCOunt().observe(this,(getClickCOunt) -> {
@@ -177,6 +210,13 @@ public class BleActivity extends BaseTemplateActivity {
         if(isConnected != null && isConnected) {
             this.scanPanel.setVisibility(View.GONE);
             this.operationPanel.setVisibility(View.VISIBLE);
+
+            Integer buttonClickCount = this.bleViewModel.getClickCOunt().getValue();
+            Calendar calendar = this.bleViewModel.getDatCal().getValue();
+
+            this.clickNumber.setText(buttonClickCount != null ? buttonClickCount.toString() : "0");
+            this.curr_date.setText(calendar != null ? (calendar.getTime()).toString() : "0:0:0");
+
 
             if(this.scanMenuBtn != null && this.disconnectMenuBtn != null) {
                 this.scanMenuBtn.setVisible(false);

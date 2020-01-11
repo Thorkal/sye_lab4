@@ -174,6 +174,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
     private class MySymBleManager extends BleManager<BleManagerCallbacks> {
 
         private MySymBleManager() {
+
             super(getApplication());
         }
 
@@ -190,14 +191,6 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 mConnection = gatt; //trick to force disconnection
                 Log.d(TAG, "isRequiredServiceSupported - discovered services:");
 
-                /* TODO
-                    - Nous devons vérifier ici que le périphérique auquel on vient de se connecter possède
-                      bien tous les services et les caractéristiques attendues, on vérifiera aussi que les
-                      caractéristiques présentent bien les opérations attendues
-                    - On en profitera aussi pour garder les références vers les différents services et
-                      caractéristiques (déclarés en lignes 33 et 34)
-                 */
-
                 //We get all the services
                 timeService = mConnection.getService(UUID.fromString(timeServiceUUID));
                 symService = mConnection.getService(UUID.fromString(symServiceUUID));
@@ -210,18 +203,10 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 return timeService != null && symService != null &&
                         currentTimeChar != null && integerChar != null &&
                         buttonClickChar != null && temperatureChar != null;
-
-                //FIXME si tout est OK, on retourne true, sinon la librairie appelera la méthode onDeviceNotSupported()
             }
 
             @Override
             protected void initialize() {
-                /* TODO
-                    Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
-                    attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
-                    Dans notre cas il s'agit de s'enregistrer pour recevoir les notifications proposées par certaines
-                    caractéristiques, on en profitera aussi pour mettre en place les callbacks correspondants.
-                 */
 
                 //we enable the notifications for the two characteristics that need it
                 enableNotifications(buttonClickChar).enqueue();
@@ -234,15 +219,17 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 });
 
                 setNotificationCallback(currentTimeChar).with((device, data) -> {
-                    mDatecal.setValue(convertDataToCalendar(data));
+                    mDatecal.setValue(convertDataCalendar(data));
                 });
 
+                readTemperature();
             }
 
 
 
                 @Override
             protected void onDeviceDisconnected() {
+
                 //we reset services and characteristics
                 timeService = null;
                 currentTimeChar = null;
@@ -255,23 +242,23 @@ public class BleOperationsViewModel extends AndroidViewModel {
         };
 
         public boolean readTemperature() {
-            /* TODO on peut effectuer ici la lecture de la caractéristique température
-                la valeur récupérée sera envoyée à l'activité en utilisant le mécanisme
-                des MutableLiveData
-                On placera des méthodes similaires pour les autres opérations...
-            */
+
             //we read the characteristic temperature and set the value of the characteristic to the mutablelivedata
             readCharacteristic(temperatureChar).with((device, data) -> {
                 mTemp.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10f);
             }).enqueue();
-            return false; //FIXME
+            if(mTemp != null)
+            {
+                return true;
+            }
+            return false;
         }
 
         public boolean writeTime(){
             //We create and send the time to the current time characteristic
             byte[] tempTime = createBleTime();
             writeCharacteristic(currentTimeChar, tempTime).enqueue();
-            return false;
+            return true;
         }
 
         public boolean writeInteger(int value){
@@ -284,10 +271,10 @@ public class BleOperationsViewModel extends AndroidViewModel {
             };
             //we write our integer on byte array format to to the characteristic
             writeCharacteristic(integerChar,tempCharact).enqueue();
-            return false;
+            return true;
         }
 
-        private Calendar convertDataToCalendar(Data data){
+        private Calendar convertDataCalendar(Data data){
 
             Calendar cal = Calendar.getInstance();
 
