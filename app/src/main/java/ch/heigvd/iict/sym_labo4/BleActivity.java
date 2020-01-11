@@ -121,7 +121,7 @@ public class BleActivity extends BaseTemplateActivity {
         });
 
         findViewById(R.id.send_hour).setOnClickListener((view) -> {
-            this.bleViewModel.writeTime();
+            this.bleViewModel.writeDate();
         });
 
         findViewById(R.id.send_val).setOnClickListener((view) -> {
@@ -211,11 +211,26 @@ public class BleActivity extends BaseTemplateActivity {
             this.scanPanel.setVisibility(View.GONE);
             this.operationPanel.setVisibility(View.VISIBLE);
 
-            Integer buttonClickCount = this.bleViewModel.getClickCOunt().getValue();
-            Calendar calendar = this.bleViewModel.getDatCal().getValue();
+            Integer clickCount = this.bleViewModel.getClickCOunt().getValue();
+            Calendar cal = this.bleViewModel.getDatCal().getValue();
 
-            this.clickNumber.setText(buttonClickCount != null ? buttonClickCount.toString() : "0");
-            this.curr_date.setText(calendar != null ? (calendar.getTime()).toString() : "0:0:0");
+            if(clickCount != null)
+            {
+                this.clickNumber.setText(clickCount.toString());
+            }
+            else
+            {
+                this.clickNumber.setText("0");
+            }
+
+            if(cal != null)
+            {
+                this.curr_date.setText((cal.getTime()).toString());
+            }
+            else
+            {
+                this.curr_date.setText("0:0:0");
+            }
 
 
             if(this.scanMenuBtn != null && this.disconnectMenuBtn != null) {

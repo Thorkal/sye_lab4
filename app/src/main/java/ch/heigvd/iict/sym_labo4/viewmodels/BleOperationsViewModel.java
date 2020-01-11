@@ -1,3 +1,12 @@
+/*
+ -----------------------------------------------------------------------------------
+ Laboratoire : 04
+ Fichier     : BleOperationsviewModel.java
+ Auteur(s)   : Pierrick Muller, Guillaume Zaretti, Tommy Gerardi
+ Date        : 03.01.2020
+ -----------------------------------------------------------------------------------
+*/
+
 package ch.heigvd.iict.sym_labo4.viewmodels;
 
 import android.app.Application;
@@ -91,9 +100,9 @@ public class BleOperationsViewModel extends AndroidViewModel {
         return ble.readTemperature();
     }
 
-    public boolean writeTime() {
+    public boolean writeDate() {
         if(!isConnected().getValue() || currentTimeChar == null) return false;
-        return ble.writeTime();
+        return ble.writeDate();
     }
 
     public boolean writeInteger(int value) {
@@ -254,7 +263,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
             return false;
         }
 
-        public boolean writeTime(){
+        public boolean writeDate(){
             //We create and send the time to the current time characteristic
             byte[] tempTime = createBleTime();
             writeCharacteristic(currentTimeChar, tempTime).enqueue();
